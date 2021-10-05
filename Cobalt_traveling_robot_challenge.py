@@ -92,12 +92,20 @@ def draw_path(pts, order):
 # generate a valid order, starting and ending with 0, the recharging station
 #############################
 
-def generate_order(pts):
-    _order = []
+order = []
+pts_remaining = np.copy(pts)
+current_pos_index = 0
+current_run = [0]
+# Add pts to AnnoyIndex
+t = AnnoyIndex(2, 'euclidean')
+for i in range(N):
+    t.add_item(i, pts_remaining[i, :])
 
-    t = AnnoyIndex(2, 'euclidean')
-    return _order
+t.build(10)  # build 10 trees
+closest = t.get_nns_by_item(current_pos_index, 2)  # will find the nearest neighbor
+print(closest[1])
+current_run.append(closest[1])
+np.delete(pts_remaining,closest[1])
+print(t.get_item_vector(closest[1]))
 
-
-order = generate_order(pts)
-check_order(pts, order)
+#check_order(pts, order)
