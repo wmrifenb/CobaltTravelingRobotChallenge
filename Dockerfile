@@ -2,6 +2,9 @@
 # generated from docker_images/create_ros_image.Dockerfile.em
 FROM ubuntu:bionic
 
+ENV TZ=America/Chicago
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # install ros packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -9,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-dev \
     python3-pip \
     python3-setuptools \
+    python3-tk \
     nano \
     && rm -rf /var/lib/apt/lists/*
 

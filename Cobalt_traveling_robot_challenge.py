@@ -1,5 +1,5 @@
 import numpy as np
-from math import sqrt
+import time
 import matplotlib.pyplot as plt
 from annoy import AnnoyIndex
 
@@ -94,8 +94,11 @@ def draw_path(pts, order):
 
 order = []
 
+start_time = time.time()
+
 # lets make an N by 3 array that contains the indices of pts to help keep track of what has yet to be visited in 1st col
-pts_remaining = np.concatenate((np.array([range(N)]).T, np.copy(pts)), axis=1)
+pts_remaining = np.concatenate((np.array([range(N + 1)]).T, np.copy(pts)), axis=1)
+pts_remaining = np.delete(pts_remaining, 0, axis=0)  # remove origin from pts to visit
 
 while len(pts_remaining) > 0:
     current_pos_index = 0
@@ -105,7 +108,8 @@ while len(pts_remaining) > 0:
     need_to_go_home = False
     distance_to_be_traveled = 0
 
-    while need_to_go_home is False:  # While battery charge is enough to get back home, keep adding pts to the path
+    while need_to_go_home is False and len(
+            pts_remaining) > 0:  # While battery charge is enough to get back home, keep adding pts to the path
 
         # Add pts_remaining to AnnoyIndex
         t = AnnoyIndex(2, 'euclidean')
@@ -113,13 +117,13 @@ while len(pts_remaining) > 0:
             t.add_item(i, pts_remaining[i, 1:])
 
         t.build(10)  # build 10 trees
-        closest = t.get_nns_by_vector(current_pos_vector, 2)  # will find the nearest neighbor
+        closest = t.get_nns_by_vector(current_pos_vector, 1)  # will find the nearest neighbor
         last_pos_index = current_pos_index
-        current_pos_index = pts_remaining[closest[1], 0]  # Extract the 'pts'-index from our pts_remaining record
+        current_pos_index = int(pts_remaining[closest, 0])  # Extract the 'pts'-index from our pts_remaining record
 
         # Calculate battery charge needed to travel current run up to this point and then get back home to charge
-        current_pos_vector = pts[current_pos_index, :]
-        d = np.linalg.norm(current_pos_vector - last_pos_index)
+        current_pos_vector = pts[current_pos_index]
+        d = np.linalg.norm(current_pos_vector - pts[last_pos_index])
         distance_to_be_traveled += d
         distance_home = np.linalg.norm(current_pos_vector - home)
         charge_needed = distance_to_be_traveled + distance_home
@@ -127,10 +131,17 @@ while len(pts_remaining) > 0:
         if charge_needed > max_charge:
             need_to_go_home = True
         else:
-            np.append(current_run_order, current_pos_index)  # add this point index to the current run
-            np.delete(pts_remaining, closest[1], 0)  # remove point from our list of pts we need to visit
+            current_run_order = np.append(current_run_order,
+                                          current_pos_index)  # add this point index to the current run
+            pts_remaining = np.delete(pts_remaining, closest,
+                                      axis=0)  # remove point from our list of pts we need to visit
 
     # Add current run to order, start a new run with full charge
-    np.concatenate(order, current_run_order, axis=1)
+    order = np.concatenate((order, current_run_order))
+
+order = np.concatenate((order, [0]))  # Add the final return home command
+order = order.astype(int)  # Covert from float to int
+
+print("Execution time: %s seconds" % (time.time() - start_time))
 
 check_order(pts, order)
