@@ -1,4 +1,5 @@
 # CobaltTravelingRobotChallenge
+[Will Rifenburgh](mailto:wmrifenburgh@gmail.com)
 
 ## Setup (Ubuntu)
 1. Install Docker
